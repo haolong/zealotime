@@ -3,6 +3,8 @@ WeChat mini app for recording personal location history, report if user has a fe
 
 > Dev log
 Consumed a whole day right before moving, but still not publishable. Features necessary:
+
+
 DONE 1. Record location and time every 10 minutes into user local storage (10M max);
 2. Record user customized information: Flight Number, Bus or Train number and time;
 DONE 3. Display own records as list;
