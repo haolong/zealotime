@@ -1,0 +1,41 @@
+/**index.wxss**/
+.userinfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.userinfo-avatar {
+  width: 128rpx;
+  height: 128rpx;
+  margin: 20rpx;
+  border-radius: 50%;
+}
+
+.userinfo-nickname {
+  color: #aaa;
+}
+
+.usermotto {
+  margin-top: 200px;
+}
+
+.myTextDisplay {
+  align-items: left;
+  margin-top: 20px;
+}
+
+.scan_result{
+  display: flex;
+  flex-direction: row;
+  padding: 6px;
+  background-color: gainsboro;
+  height: 14px;
+}
+.result_text{
+  width: 100%;
+  height: 20px;
+  color: black;
+  font-size: 14px;
+  display: block;
+}

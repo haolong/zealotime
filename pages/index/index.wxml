@@ -1,0 +1,18 @@
+<!--index.wxml-->
+<view class="container">
+  <view class="userinfo">
+    <button wx:if="{{!hasUserInfo && canIUse}}" open-type="getUserInfo" bindgetuserinfo="getUserInfo"> 获取头像昵称 </button>
+    <block wx:else>
+      <image bindtap="bindViewTap" class="userinfo-avatar" src="{{userInfo.avatarUrl}}" mode="cover"></image>
+      <text class="userinfo-nickname">{{userInfo.nickName}}</text>
+      <!--button bindtap="navigateScan">扫描蓝牙</button-->
+    </block>
+  </view>
+  <view class='scan_result' wx:for="{{myLocationHistory}}">
+     <text class="result_text">{{index}},{{item}}</text>
+  </view>
+  <view class="myTextDisplay">
+    <!--text class="myTextDisplay">蓝牙状态：{{userBluetooth}}</text-->
+    <text class="myTextDisplay">latitude: {{latitude}}, \nlongitude: {{longitude}}</text>
+  </view>
+</view>
