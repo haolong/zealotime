@@ -1,18 +1,20 @@
-<!--index.wxml-->
+<!--miniprogram/pages/zealotime/zealotime.wxml-->
 <view class="container">
   <view class="userinfo">
     <button wx:if="{{!hasUserInfo && canIUse}}" open-type="getUserInfo" bindgetuserinfo="getUserInfo"> 获取头像昵称 </button>
     <block wx:else>
       <image bindtap="bindViewTap" class="userinfo-avatar" src="{{userInfo.avatarUrl}}" mode="cover"></image>
       <text class="userinfo-nickname">{{userInfo.nickName}}</text>
-      <!--button bindtap="navigateScan">扫描蓝牙</button-->
     </block>
   </view>
-  <view class='scan_result' wx:for="{{myLocationHistory}}">
-     <text class="result_text">{{index}},{{item}}</text>
-  </view>
+  
+  <button size="mini" type="default" bindtap="myAddReport">我发烧了(慎点 报告公卫)</button>
+  <button size="mini" type="default" bindtap="myScanReport">我安全吗</button>
   <view class="myTextDisplay">
-    <!--text class="myTextDisplay">蓝牙状态：{{userBluetooth}}</text-->
-    <text class="myTextDisplay">latitude: {{latitude}}, \nlongitude: {{longitude}}</text>
+    <text class="myTextDisplay">安全度参考：本次扫描发现 {{myZcount}} 条可疑记录</text>
+  </view>
+    <text class="myTextDisplay">序号\t大致时间\t经度\t纬度\t</text>
+    <view class='scan_result' wx:for="{{queryResult}}">
+     <text class="result_text">{{index}}\t{{item.myTimeSlotUTC*10000}}\t{{item.location.longitude}},{{item.location.latitude}}</text>
   </view>
 </view>
