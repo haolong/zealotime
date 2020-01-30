@@ -8,8 +8,8 @@
     </block>
   </view>
   
-  <button size="mini" type="default" bindtap="myAddReport">我发烧了(慎点 报告公卫)</button>
-  <button size="mini" type="default" bindtap="myScanReport">我安全吗</button>
+  <button size="mini" type="default" bindtap="myAddReport">我发烧了(慎点 报告本地个人记录)</button>
+  <button size="mini" type="default" bindtap="myScanReport">我安全吗？（扫描云端病毒活动记录）</button>
   <view class="myTextDisplay">
     <text class="myTextDisplay">安全度参考：本次扫描发现 {{myZcount}} 条可疑记录</text>
   </view>
