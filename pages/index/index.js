@@ -8,6 +8,8 @@ Page({
    */
   data: {
     motto: 'Hello World',
+    myZcount: 0, //Default Good
+    queryResult: 'Loading...', 
     userInfo: {},
     myIntervalSize: 10000, //Every 10min is 6000000
     myLocationHistory: [], //[ [t1,latitude1,longitude1],[t2,la2,lo2],...,[] ]
@@ -67,7 +69,7 @@ Page({
     let self = this
     //Repeat every 10 minutes in recording user location
     var myInterval = setInterval(function () {
-      //self.myGetLocationNow()
+      self.myGetLocationNow()
     }, self.data.myIntervalSize)
 
   },
@@ -170,10 +172,14 @@ Page({
       const db = wx.cloud.database()
       db.collection('z_reports').add({
         data: {
-          myTimeSlotUTC: key,
-          latitude:  myLocalRecord[0],
-          longitude: myLocalRecord[1],
-          speed:     myLocalRecord[2]
+          myTimeSlotUTC: Number(key),
+          location: {
+            type: 'Point',
+            coordinates: [myLocalRecord[1], myLocalRecord[0], myLocalRecord[2]]
+          }
+          //latitude: myLocalRecord[0],
+          //longitude: myLocalRecord[1],
+          //speed:     myLocalRecord[2]
         },
         success: res => {
           // 在返回结果中会包含新创建的记录的 _id
@@ -195,6 +201,51 @@ Page({
         }
       })
     }
+  },
+
+  myScanReport: function(){
+    var myStorageKeys = wx.getStorageInfoSync().keys
+    //console.log("myStorageKeys", key)
+
+    for (var key of myStorageKeys) {
+      //console.log("hey", key)
+      var myLocalRecord = wx.getStorageSync(key)
+      //console.log("myLocalRecord",myLocalRecord[0])
+      this.onQuery(Number(key),myLocalRecord[1], myLocalRecord[0])
+    }
+  },
+
+  onQuery: function (ti,lo,la) {
+    const db = wx.cloud.database()
+    const dbcmd = db.command
+
+    console.log(ti,lo,la)
+
+    db.collection('z_reports').where({
+      //_openid: this.data.openid
+      location: dbcmd.geoNear({
+        geometry: db.Geo.Point(lo, la),
+        minDistance: 0,
+        maxDistance: 5, //Records in 5 meters distance
+      }),
+      myTimeSlotUTC: dbcmd.gte(ti-100).and(dbcmd.lte(ti+100)) //Records in approximatedly 10 minutes time slot 
+    }).get({
+      success: res => {
+        this.setData({
+          queryResult: res.data,
+          myZcount: res.data.length  //注意：需要累加
+        })
+        console.log('[数据库] [查询记录] 成功: ', res.data.length)
+        console.log('[数据库] [查询记录] 成功: ', res.data)
+      },
+      fail: err => {
+        wx.showToast({
+          icon: 'none',
+          title: '查询记录失败'
+        })
+        console.error('[数据库] [查询记录] 失败：', err)
+      }
+    })
   }
 
 
