@@ -7,8 +7,8 @@ Page({
    * Page initial data
    */
   data: {
-    motto: 'Hello World',
-    myZcount: 0, //Default 0 for good
+    motto: '人人为我 我为人人 众志成城 数据战疫',
+    myZcount: -1, //Default -1 for good. Avoid showing 0 alert and >1 result blocks
     myZscanResult: [], //Want to use hash table here
     myLocalCount: '读取中',
     userInfo: {},
@@ -97,7 +97,7 @@ Page({
     let self = this
     self.setData({
       myZscanResult: [],
-      myZcount: 0
+      myZcount: -1 //Avoid showing 0 alert and >1 result blocks
     })
   },
 
@@ -146,7 +146,7 @@ Page({
     wx.getLocation({
       type: 'gcj02',
       isHighAccuracy: 'true',
-      highAccuracyExpireTime: '40000', //[定位硬件工作时长]at least 3000 for performance
+      highAccuracyExpireTime: '10000', //[定位硬件工作时长]at least 3000 for performance
 
       success(res) {
         console.log(res)
@@ -166,7 +166,7 @@ Page({
         //Record time slot and location to local storage
         wx.setStorage({
           key: String(myTimeSlotUTC),
-          data: [res.latitude, res.longitude, res.speed],
+          data: [res.latitude, res.longitude, res.speed, res.accuracy],
           success: function (res) { console.log("Success in Storage", res) },
           fail: function (res) { console.log("Failed in Storage", res) },
           complete: function (res) { },
@@ -184,19 +184,21 @@ Page({
       //console.log("hey", key)
       var myLocalRecord = wx.getStorageSync(key)
       //console.log("myLocalRecord",myLocalRecord[0])
-
+/*--Attention-------CLOUD DATABASE COLLECT TABLE STRCTURE DESIGN BLOCK HERE------注意-------*/
       const db = wx.cloud.database()
       db.collection('z_reports').add({
         data: {
           myTimeSlotUTC: Number(key),
           location: {
             type: 'Point',
-            coordinates: [myLocalRecord[1], myLocalRecord[0], myLocalRecord[2]]
-          }
+            coordinates: [myLocalRecord[1], myLocalRecord[0]]
+          },
           //latitude: myLocalRecord[0],
           //longitude: myLocalRecord[1],
-          //speed:     myLocalRecord[2]
+          speed:     myLocalRecord[2],
+          accuracy:  myLocalRecord[3]
         },
+/*--Attention END----CLOUD DATABASE COLLECT TABLE STRCTURE DESIGN BLOCK HERE------注意-------*/
         success: res => {
           // 在返回结果中会包含新创建的记录的 _id
           this.setData({
