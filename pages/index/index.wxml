@@ -1,20 +1,61 @@
 <!--miniprogram/pages/zealotime/zealotime.wxml-->
 <view class="container">
+  <text class="usermotto">人人为我 我为人人 众志成城 数据战疫</text>
   <view class="userinfo">
-    <button wx:if="{{!hasUserInfo && canIUse}}" open-type="getUserInfo" bindgetuserinfo="getUserInfo"> 获取头像昵称 </button>
-    <block wx:else>
+    <button wx:if="{{!hasUserInfo && canIUse}}" open-type="getUserInfo" bindgetuserinfo="getUserInfo"> 请点此登录并开启自动定位记录 </button>
+    <block  wx:else>
       <image bindtap="bindViewTap" class="userinfo-avatar" src="{{userInfo.avatarUrl}}" mode="cover"></image>
       <text class="userinfo-nickname">{{userInfo.nickName}}</text>
+      <text >我的本地记录：{{myLocalCount}} 条\n当前时间窗口：{{myTimeSlotUTC}}\n当前定位精度：{{accuracy}}\n经度{{longitude}} , 纬度{{latitude}}  </text>
     </block>
+    
   </view>
   
-  <button size="mini" type="default" bindtap="myAddReport">我发烧了(慎点 报告本地个人记录)</button>
-  <button size="mini" type="default" bindtap="myScanReport">我安全吗？（扫描云端病毒活动记录）</button>
-  <view class="myTextDisplay">
-    <text class="myTextDisplay">安全度参考：本次扫描发现 {{myZcount}} 条可疑记录</text>
+  <button class="page-body-button" size="mini" type="warn" bindtap="myAddReport"> 我发烧了！（上传本机个人记录到云）</button>
+  <button class="page-body-button" size="mini" type="primary" bindtap="myScanReport">我安全吗？（扫描身边病毒活动记录）</button>
+
+  <view wx:if="{{myZcount}}" class="myTextDisplay">
+    <text>扫描结果：本次扫描发现 {{myZcount}} 条 可疑接触记录\n</text>
+    <text>[序号]  UTC时间窗口:  经度,  纬度</text>
   </view>
-    <text class="myTextDisplay">序号\t大致时间\t经度\t纬度\t</text>
-    <view class='scan_result' wx:for="{{queryResult}}">
-     <text class="result_text">{{index}}\t{{item.myTimeSlotUTC*10000}}\t{{item.location.longitude}},{{item.location.latitude}}</text>
+  <view class="scan_result" wx:for="{{myZscanResult}}" wx:key="index">
+      <text class="result_text">[{{index}}]\t  {{item.myTimeSlotUTC*10000}} :\t  {{item.longitude}},{{item.latitude}}</text>
+      <button class="button_detail" bindtap='' data-item='{{item}}'>详情</button>
   </view>
+
+  <!---------Map area------->
+  <view wx:if="{{myZcount}}" class="page-section-gap">
+    <map
+      id="myMap"
+      style="width: 100%; height: 300px;"
+      latitude="{{latitude}}"
+      longitude="{{longitude}}"
+      covers="{{myZscanResult}}"
+      show-location
+    ></map>
+  </view>
+
+  <!--button wx:if="{{myZcount}}" class="page-body-button" type="default" bindtap="openDialog">在地图中查看</button>
+  <view class="weui-demo-dialog {{istrue ? 'weui-demo-dialog_show' : ''}}">
+    <view class="weui-mask" bindtap="closeDialog"></view>
+    <view class="weui-half-screen-dialog" catchtap="stopEvent">
+      <view class="weui-half-screen-dialog__hd">
+        <view class="weui-half-screen-dialog__hd__side">
+          <view bindtap="closeDialog" class="weui-icon-btn weui-icon-btn_close">关闭</view>
+        </view>
+        <view class="weui-half-screen-dialog__hd__main">
+          <text class="weui-half-screen-dialog__title">详情</text>
+          <text class="weui-half-screen-dialog__subtitle">上滑弹出栏 小标题</text>
+        </view>
+      </view>
+      <view class="weui-half-screen-dialog__bd">
+
+      </view>
+    </view>
+  </view-->
+
+  <view class="myNoteDisplay">
+    <text>扫描规则：扫描云端病毒活动数据库中与我一度与我距离约5米、时间窗口约10分钟的接触记录。\n特别提示：我们鼓励每个有严重新型冠状病毒感染症状的用户第一时间上传个人记录。上传的记录将被用于帮助其他用户扫描风险并共享给公共卫生机构及早预警。虚报数据将带来严重后果，点击上传按钮前请务必慎重判断。</text>
+  </view>
+
 </view>
