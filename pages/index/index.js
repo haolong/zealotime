@@ -3,12 +3,11 @@
 const app = getApp()
 
 // 引入SDK核心类
-var QQMapWX = require('xxx/qqmap-wx.js');
-
-// 实例化API核心类
+var QQMapWX = require('../../utils/qqmap-wx-jssdk.js');
+// 实例化API核心类 地图逆坐标解析使用
 var qqmapsdk = new QQMapWX({
-  key: '开发密钥（key）' // 必填
-});  
+  key: '====================' // 必填
+})
 
 Page({
 
@@ -22,7 +21,7 @@ Page({
     userZriskLevel: 0, //用户感染风险等级 0低风险，1中等风险，2疑似，3确诊
 
     myScanFlag: 0,
-    Z5kmVirusCount: 0, //云端查询5公里病毒痕迹条数
+    Z5kmVirusCount: '刷新中', //云端查询5公里病毒痕迹条数
     myZcount: 0, //Default 0 for showing low risk
     myZscanResult: [], //Data cache servers both result table and Map markers
     myLocalCount: '读取中',
@@ -96,7 +95,34 @@ Page({
         }
       })
     }
-
+    /*wx.getSetting({ //
+      success(res) {
+        console.log(res)
+        if (res.authSetting['scope.userLocationBackground']) {
+          wx.startLocationUpdateBackground({
+            success: (res) => {
+              console.log('startLocationUpdate-res', res)
+            },
+            fail: (err) => {
+              console.log('startLocationUpdate-err', err)
+            }
+          })
+        } else {
+          if (res.authSetting['scope.userLocation'] == false) {
+            console.log('打开设置页面去授权')
+          } else {
+            wx.startLocationUpdateBackground({
+              success: (res) => {
+                console.log('startLocationUpdate-res', res)
+              },
+              fail: (err) => {
+                console.log('startLocationUpdate-err', err)
+              }
+            })
+          }
+        }
+      }
+    })*/    
   },
   
 
@@ -108,7 +134,6 @@ Page({
     //Repeat every 10 minutes in recording user location
     var myInterval = setInterval(function () {
       self.myGetLocationNow()
-      self.onQuery5km(self.data.longitude, self.data.latitude)
     }, self.data.myIntervalSize)
   },
 
@@ -118,7 +143,15 @@ Page({
   onShow: function () {
     let self = this
     //Firstime in recording user location
-    self.myGetLocationNow()
+    self.myWaitGetLocation()    
+  },
+
+  async myWaitGetLocation() {
+    let self = this
+    //console.log("开始等待")
+    self.myGetLocationNow() //Had set 6000 for getLocation work well
+    await self.myDelay(6600)
+    //console.log("结束等待")
     self.onQuery5km(self.data.longitude, self.data.latitude)
   },
 
@@ -182,7 +215,7 @@ Page({
     wx.getLocation({
       type: 'gcj02',
       isHighAccuracy: 'true',
-      highAccuracyExpireTime: '10000', //[定位硬件工作时长]at least 3000 for performance
+      highAccuracyExpireTime: '8000', //[定位硬件工作时长]at least 3000 for performance
 
       success(res) {
         console.log(res)
@@ -214,7 +247,8 @@ Page({
   },
 
   //Upload one record a time to cloud:database:collection
-  myAddReport: function(){
+  async myAddReport(){
+    let self = this
     var myStorageKeys = wx.getStorageInfoSync().keys
     //console.log("myStorageKeys", key)
 
@@ -224,7 +258,7 @@ Page({
       //console.log("myLocalRecord",myLocalRecord[0])
 /*--Attention-------CLOUD DATABASE COLLECT TABLE STRCTURE DESIGN BLOCK HERE------注意-------*/
       const db = wx.cloud.database()
-      db.collection('z_reports').add({
+      db.collection('IPO_z_reports').add({
         data: {
           ZTimeSlotUTC: Number(key), //The time slot var name changed to ZTimeSlotUTC while uploading to cloud
           location: {
@@ -234,7 +268,12 @@ Page({
           //latitude: myLocalRecord[0],
           //longitude: myLocalRecord[1],
           speed:     myLocalRecord[2],
-          accuracy:  myLocalRecord[3]
+          accuracy:  myLocalRecord[3],
+          //--Basic personalized info--Will have a seperate table--//
+          Zquestionnaire: self.data.myQuestionnaire,
+          userZriskLevel: self.data.userZriskLevel,
+          userInfo: self.data.userInfo,
+          userPrivacyGroup: self.data.userPrivacyGroup
         },
 /*--Attention END----CLOUD DATABASE COLLECT TABLE STRCTURE DESIGN BLOCK HERE------注意-------*/
         success: res => {
@@ -251,11 +290,12 @@ Page({
         fail: err => {
           wx.showToast({
             icon: 'none',
-            title: '上报记录失败'
+            title: '上报记录失败，请稍后重试'
           })
           console.error('[数据库] [新增记录] 失败：', err)
         }
       })
+      await self.myDelay(500)
     }
   },
   /*--------Scanning Functions--------*/
@@ -263,6 +303,8 @@ Page({
     async: false
     wx.showToast({
       title: '开始扫描',
+      duration: 5000,
+      icon: 'loading'
     })
     let self = this
     var myZscanResult = self.data.myZscanResult
@@ -270,13 +312,17 @@ Page({
     self.setData({
       myZscanResult: [],
       myZcount: 0,
-      myScanFlag: 1,
-      Z5kmVirusCount: '加载中'
+      myScanFlag: 0,
+      Z5kmVirusCount: '刷新中'
     })
 
     self.onQuery5km(self.data.longitude,self.data.latitude)
     await self.onQueryBulk()
     //[HELP: Can't promise the syn 异步顺序关不掉] 
+    await self.myDelay(3500)
+    self.setData({
+      myScanFlag: 1,
+    })
     console.log("count:", app.globalData.myZcount, self.data.myZscanResult.length)  //Get statistics of this scan results
   },
 
@@ -291,6 +337,7 @@ Page({
       //console.log("myLocalRecord",myLocalRecord[0])
       await self.onQuery(Number(key), myLocalRecord[1], myLocalRecord[0]) //time,longitude,latitude
     }
+    await self.myDelay(1000)
     console.log("Success in QueryBulk", self.data.myZscanResult.length) 
   },
 
@@ -301,9 +348,9 @@ Page({
     const dbcmd = db.command
     var myZscanResult = self.data.myZscanResult
     var myZcount = self.data.myZcount
-    console.log("Scanning cloud database for local record: ",ti,lo,la)
+    //console.log("Scanning cloud database for local record: ",ti,lo,la)
 
-    await db.collection('z_reports').where({
+    await db.collection('IPO_z_reports').where({
       //_openid: this.data.openid
       location: dbcmd.geoNear({
         geometry: db.Geo.Point(lo, la),
@@ -314,7 +361,7 @@ Page({
       //Note: In the before slot of 10 minutes, risk confidence is high; while in the after slot of 10 minutes risk confidence is low, and may cause duplicate results with the before slot of the next 10 minutes if user location did not change. 
     })//.skip(50) //Use for paging
       .get({
-      success: res => {
+      async success(res) {
         //Save scan results from cloud to local cache
         for(var item of res.data){
           var tmp = {}
@@ -322,26 +369,47 @@ Page({
           tmp.title = new Date(item.ZTimeSlotUTC).toLocaleDateString()
           tmp.longitude = item.location.longitude
           tmp.latitude = item.location.latitude
-          tmp.iconPath = '../../images/location.png'
+          tmp.iconPath = '../../images/location.png' 
+          //console.log("外部START", item.ZTimeSlotUTC)
+          //Get readable address and save to cache 异步函数控制不了！！！！！！！
+          qqmapsdk.reverseGeocoder({
+          location: item.location, //'39.984060,116.307520'
+          success: res => {
+            //console.log("[QQ Map reverser Geo] 成功:", item.ZTimeSlotUTC,res)
+            tmp.address = (res.result.formatted_addresses && res.result.formatted_addresses.recommend || res.result.address )
+          }, //国外地址不返回formatted_addresses.recommend，直接跨级取值会报错
+          fail: err => {
+            //console.log('[QQ Map reverser Geo] 失败：', err) 
+            }
+          })
+          await self.myDelay(1200 + 1888 * Math.random()) /*==OMG it worked! I almost burst into tears! Lunch in nobu today===*/
+          //console.log("外部END", item.ZTimeSlotUTC)
           myZscanResult.push(tmp) //Caution: need to use HASH here but so hard to find out how
         }
+        await self.myDelay(1000 + 2020 * Math.random())
         myZcount = myZcount + myZscanResult.length
         self.setData({
           myZcount: myZcount,
           myZscanResult: myZscanResult
         })
         console.log('[数据库] [查询记录] 成功: ', myZscanResult.length)
-        console.log('[数据库] [查询记录] 成功: ', res.data)
+        //console.log('[数据库] [查询记录] 成功: ', res.data)
       },
       fail: err => {
         wx.showToast({
           icon: 'none',
-          title: '查询记录失败'
+          title: '本次查询记录失败，请稍后重试'
         })
         console.error('[数据库] [查询记录] 失败：', err)
       }
     })
     console.log("Success in Query")
+  },
+
+  myDelay: function (milSec) {
+    return new Promise(resolve => {
+      setTimeout(resolve, milSec)
+    })
   },
 
   async onQuery5km(lo, la) {
@@ -352,29 +420,28 @@ Page({
     var Z5kmVirusCount
     console.log("Scanning cloud database for local record 5km: ", lo, la)
 
-    await db.collection('z_reports').where({
-      _openid: this.data.openid,
+    await db.collection('IPO_z_reports').where({
       location: dbcmd.geoNear({
         geometry: db.Geo.Point(lo, la),
         minDistance: 0,
         maxDistance: 5000, //[设置][距离条件] Records in 5km meters distance 
       }),
-    }).limit(20) //小程序限制每次最多取 20 条记录
+    })//.limit(20) //小程序限制每次最多取 20 条记录
        //.skip(20) //跳过多少条用于分页显示控制
       .get({
-      success: res => {
-        if (res.data.length = 20) { Z5kmVirusCount="大于19"}
-        else { Z5kmVirusCount = res.data.length}
-        self.setData({
-          Z5kmVirusCount: Z5kmVirusCount
-        })
-        console.log('[数据库] [查询记录5km] 成功: ', self.data.Z5kmVirusCount)
-        console.log('[数据库] [查询记录5km] 成功: ', res)
-      },
+        success: res => {
+          if (res.data.length == 20) { Z5kmVirusCount="大于19";console.log("--------------->>", res.data)}
+          else { Z5kmVirusCount = res.data.length}
+          self.setData({
+            Z5kmVirusCount: Z5kmVirusCount
+          })
+          //console.log('[数据库] [查询记录5km] 成功: ', lo,la,"[resdata]:",self.data.Z5kmVirusCount)
+          //console.log('[数据库] [查询记录5km] 成功: ', res)
+        },
         fail: err => {
           wx.showToast({
             icon: 'none',
-            title: '查询记录失败5km'
+            title: '本次5km查询记录失败，请稍后重试'
           })
           console.error('[数据库] [查询记录5km] 失败：', err)
         }
