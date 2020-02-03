@@ -1,6 +1,15 @@
 // miniprogram/pages/zealotime/zealotime.js
 //获取应用实例
 const app = getApp()
+
+// 引入SDK核心类
+var QQMapWX = require('xxx/qqmap-wx.js');
+
+// 实例化API核心类
+var qqmapsdk = new QQMapWX({
+  key: '开发密钥（key）' // 必填
+});  
+
 Page({
 
   /**
@@ -8,30 +17,51 @@ Page({
    */
   data: {
     motto: '人人为我 我为人人 众志成城 数据战疫',
-    myZcount: -1, //Default -1 for good. Avoid showing 0 alert and >1 result blocks
-    myZscanResult: [], //Want to use hash table here
-    myLocalCount: '读取中',
     userInfo: {},
+    userPrivacyGroup:1, //程序内部隐私级别规范 1:A级，2:B级，3:C级，7:D级
+    userZriskLevel: 0, //用户感染风险等级 0低风险，1中等风险，2疑似，3确诊
+
+    myScanFlag: 0,
+    Z5kmVirusCount: 0, //云端查询5公里病毒痕迹条数
+    myZcount: 0, //Default 0 for showing low risk
+    myZscanResult: [], //Data cache servers both result table and Map markers
+    myLocalCount: '读取中',
+
+    myTimeSlotUTC: 886886886886,
     myIntervalSize: 600000, //Every 10min is 600000
-    myLocationHistory: [], //[ [t1,latitude1,longitude1],[t2,la2,lo2],...,[] ]
     latitude: 0,
     longitude: 0,
     speed:0,
     accuracy:0,
-    myTimeSlotUTC: 888888,
+    myLocationHistory: [], //[ [t1,latitude1,longitude1],[t2,la2,lo2],...,[] ]
     //userBluetooth: '____',
+
     hasUserInfo: false,
     canIUse: wx.canIUse('button.open-type.getUserInfo'),
     showDialog: false,
-    covers: [{
-      latitude: 23.099994,
-      longitude: 113.344520,
-      iconPath: '../../images/location.png'
-    }, {
-      latitude: 23.099994,
-      longitude: 113.304520,
-      iconPath: '../../images/location.png'
-    }]
+    //markers: [{
+    //  title: date,
+    //  latitude: 23.099994,
+    //  longitude: 113.344520,
+    //  iconPath: '../../images/location.png'
+    //}, {
+    //  latitude: 23.099994,
+    //  longitude: 113.304520,
+    //  iconPath: '../../images/location.png'
+    //}],
+
+    //自评问卷答案缓存
+    myQuestionnaire: {
+      gender: 0, //0 for female, 1 for male
+      birthdate: "2020-02-02",
+      q_temp: 37,
+      q_fali: 0,
+      q_ganke: 0,
+      q_wuhanlvxing: 0,
+      q_wuhan_jiechu: 0,
+      q_jujixing_userSelfReport: 0, //聚集性指标 通过此处用户自评与云数据检测综合得出
+      hasDoctorResult: 0
+    }
   },
 
   
@@ -74,9 +104,11 @@ Page({
    * Lifecycle function--Called when page is initially rendered
    */
   onReady: function () {
+    let self = this
     //Repeat every 10 minutes in recording user location
     var myInterval = setInterval(function () {
       self.myGetLocationNow()
+      self.onQuery5km(self.data.longitude, self.data.latitude)
     }, self.data.myIntervalSize)
   },
 
@@ -87,7 +119,7 @@ Page({
     let self = this
     //Firstime in recording user location
     self.myGetLocationNow()
-
+    self.onQuery5km(self.data.longitude, self.data.latitude)
   },
 
   /**
@@ -95,9 +127,12 @@ Page({
    */
   onHide: function () {
     let self = this
+    //reset scan results
     self.setData({
       myZscanResult: [],
-      myZcount: -1 //Avoid showing 0 alert and >1 result blocks
+      myZcount: 0, 
+      myScanFlag: 0,
+      Z5kmVirusCount: 0
     })
   },
 
@@ -141,7 +176,8 @@ Page({
 
   myGetLocationNow: function () {
     self = this
-    var myTimeSlotUTC = Math.floor(Date.now() / self.data.myIntervalSize)
+    //var myTimeSlotUTC = self.data.myIntervalSize * Math.floor(Date.now() / self.data.myIntervalSize)
+    var myTimeSlotUTC = Date.now() //Using database at last. I decide to use exact time finally and not to eschew two more calls of if clause
     //Get user location
     wx.getLocation({
       type: 'gcj02',
@@ -154,15 +190,7 @@ Page({
         var myLocationHistory = self.data.myLocationHistory
         //console.log(myLocationHistory)
         myLocationHistory.push([myTimeSlotUTC, res.latitude, res.longitude, res.speed])
-        self.setData({
-          myTimeSlotUTC: myTimeSlotUTC,
-          latitude: res.latitude,
-          longitude: res.longitude,
-          speed: res.speed,
-          accuracy: res.accuracy,
-          myLocationHistory: myLocationHistory,
-          myLocalCount: wx.getStorageInfoSync().keys.length
-        })
+        
         //Record time slot and location to local storage
         wx.setStorage({
           key: String(myTimeSlotUTC),
@@ -170,6 +198,16 @@ Page({
           success: function (res) { console.log("Success in Storage", res) },
           fail: function (res) { console.log("Failed in Storage", res) },
           complete: function (res) { },
+        })
+        //Record time slot and location to local temp storage for runtime status
+        self.setData({
+          myTimeSlotUTC: myTimeSlotUTC,
+          latitude: res.latitude,
+          longitude: res.longitude,
+          speed: res.speed,
+          accuracy: res.accuracy,
+          myLocationHistory: myLocationHistory,
+          myLocalCount: wx.getStorageInfoSync().keys.length //Remember to call this after setStorage
         })
       }
     })
@@ -188,7 +226,7 @@ Page({
       const db = wx.cloud.database()
       db.collection('z_reports').add({
         data: {
-          myTimeSlotUTC: Number(key),
+          ZTimeSlotUTC: Number(key), //The time slot var name changed to ZTimeSlotUTC while uploading to cloud
           location: {
             type: 'Point',
             coordinates: [myLocalRecord[1], myLocalRecord[0]]
@@ -220,59 +258,79 @@ Page({
       })
     }
   },
-
-  myScanReport: function(){
-    //async: false
+  /*--------Scanning Functions--------*/
+  async myScanReport(){
+    async: false
     wx.showToast({
       title: '开始扫描',
     })
     let self = this
     var myZscanResult = self.data.myZscanResult
-    this.setData({
-      myZscanResult: []
+    //reset scan result
+    self.setData({
+      myZscanResult: [],
+      myZcount: 0,
+      myScanFlag: 1,
+      Z5kmVirusCount: '加载中'
     })
 
+    self.onQuery5km(self.data.longitude,self.data.latitude)
+    await self.onQueryBulk()
+    //[HELP: Can't promise the syn 异步顺序关不掉] 
+    console.log("count:", app.globalData.myZcount, self.data.myZscanResult.length)  //Get statistics of this scan results
+  },
+
+  async onQueryBulk() {
+    async: false
+    let self = this
     var myStorageKeys = wx.getStorageInfoSync().keys
     //console.log("myStorageKeys", key)
     for (var key of myStorageKeys) {
       //console.log("hey", key)
       var myLocalRecord = wx.getStorageSync(key)
       //console.log("myLocalRecord",myLocalRecord[0])
-      this.onQuery(Number(key),myLocalRecord[1], myLocalRecord[0]) //time,longitude,latitude
+      await self.onQuery(Number(key), myLocalRecord[1], myLocalRecord[0]) //time,longitude,latitude
     }
-    //[HELP: Can't promise the syn 异步顺序关不掉] console.log("count:", app.globalData.myZcount, self.data.myZscanResult.length)  //Get statistics of this scan results
+    console.log("Success in QueryBulk", self.data.myZscanResult.length) 
   },
 
-  onQuery: function (ti,lo,la) {
+  async onQuery(ti,lo,la) {
+    async: false
     let self =  this
     const db = wx.cloud.database()
     const dbcmd = db.command
     var myZscanResult = self.data.myZscanResult
+    var myZcount = self.data.myZcount
     console.log("Scanning cloud database for local record: ",ti,lo,la)
 
-    db.collection('z_reports').where({
+    await db.collection('z_reports').where({
       //_openid: this.data.openid
       location: dbcmd.geoNear({
         geometry: db.Geo.Point(lo, la),
         minDistance: 0,
-        maxDistance: 5, //[设置][距离条件] Records in 5 meters distance 
+        maxDistance: 5 //[设置][距离条件] Records in 5 meters distance 
       }),
-      myTimeSlotUTC: dbcmd.gte(ti - self.data.myIntervalSize).and(dbcmd.lte(ti + self.data.myIntervalSize)) //[设置][时间条件] Records in approximatedly 10 minutes time slot 
-    }).get({
+      ZTimeSlotUTC: dbcmd.gte(ti - self.data.myIntervalSize).and(dbcmd.lte(ti + self.data.myIntervalSize)) //[设置][时间条件] Records in approximatedly 10 minutes time slot
+      //Note: In the before slot of 10 minutes, risk confidence is high; while in the after slot of 10 minutes risk confidence is low, and may cause duplicate results with the before slot of the next 10 minutes if user location did not change. 
+    })//.skip(50) //Use for paging
+      .get({
       success: res => {
+        //Save scan results from cloud to local cache
         for(var item of res.data){
           var tmp = {}
-          tmp.myTimeSlotUTC = item.myTimeSlotUTC
+          //tmp.title = String(item.ZTimeSlotUTC)
+          tmp.title = new Date(item.ZTimeSlotUTC).toLocaleDateString()
           tmp.longitude = item.location.longitude
           tmp.latitude = item.location.latitude
           tmp.iconPath = '../../images/location.png'
           myZscanResult.push(tmp) //Caution: need to use HASH here but so hard to find out how
         }
+        myZcount = myZcount + myZscanResult.length
         self.setData({
-          myZscanResult: myZscanResult,
-          myZcount: res.data.length //注意：这个写法出来的结果是错的
+          myZcount: myZcount,
+          myZscanResult: myZscanResult
         })
-        console.log('[数据库] [查询记录] 成功: ', res.data.length)
+        console.log('[数据库] [查询记录] 成功: ', myZscanResult.length)
         console.log('[数据库] [查询记录] 成功: ', res.data)
       },
       fail: err => {
@@ -283,7 +341,48 @@ Page({
         console.error('[数据库] [查询记录] 失败：', err)
       }
     })
+    console.log("Success in Query")
   },
+
+  async onQuery5km(lo, la) {
+    async: false
+    let self = this
+    const db = wx.cloud.database()
+    const dbcmd = db.command
+    var Z5kmVirusCount
+    console.log("Scanning cloud database for local record 5km: ", lo, la)
+
+    await db.collection('z_reports').where({
+      _openid: this.data.openid,
+      location: dbcmd.geoNear({
+        geometry: db.Geo.Point(lo, la),
+        minDistance: 0,
+        maxDistance: 5000, //[设置][距离条件] Records in 5km meters distance 
+      }),
+    }).limit(20) //小程序限制每次最多取 20 条记录
+       //.skip(20) //跳过多少条用于分页显示控制
+      .get({
+      success: res => {
+        if (res.data.length = 20) { Z5kmVirusCount="大于19"}
+        else { Z5kmVirusCount = res.data.length}
+        self.setData({
+          Z5kmVirusCount: Z5kmVirusCount
+        })
+        console.log('[数据库] [查询记录5km] 成功: ', self.data.Z5kmVirusCount)
+        console.log('[数据库] [查询记录5km] 成功: ', res)
+      },
+        fail: err => {
+          wx.showToast({
+            icon: 'none',
+            title: '查询记录失败5km'
+          })
+          console.error('[数据库] [查询记录5km] 失败：', err)
+        }
+      })
+      //.count() //geo不让用count 真是 疼
+    console.log('[数据库] [查询记录5km] 结束: ', self.data.Z5kmVirusCount)
+  },
+
 
   openDialog: function () {
     this.setData({
