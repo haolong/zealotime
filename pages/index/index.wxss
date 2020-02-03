@@ -30,7 +30,7 @@
   align-self: left;
   width: 100%;
   margin-left: 15px;
-  padding-top: 6px;
+  padding-top: 10px;
 }
 
 .myNoteDisplay{
@@ -48,7 +48,7 @@
   padding-bottom: 6px;
   background-color: gainsboro;
   height: 36px;
-  margin-top: 12px;
+  margin-top: 6px;
   align-items: left;
 }
 .result_text{
@@ -72,8 +72,8 @@
 
 .page-body-button {
   width: 100%;
-  margin-top: 20rpx;
-  padding: 15px 20px;
+  margin-top: 30rpx;
+  padding: 10rpx 20rpx;
 }
 
 
