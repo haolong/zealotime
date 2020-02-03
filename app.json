@@ -1,20 +1,26 @@
 {
   "pages": [
-    "pages/index/index",
-    "pages/scan/scan",
-    "pages/logs/logs"
+    "pages/zealotime/zealotime",
+    "pages/index/index"
   ],
   "permission": {
     "scope.userLocation": {
-      "desc": "你的位置信息将用于小程序位置匹配"
-    }
+      "desc": "你的位置信息将用于小程序位置自动记录功能"
+    },
+    "scope.userLocationBackground": {
+      "desc": "你的位置信息将用于小程序位置背景自动记录功能"
+    }    
   },
   "window": {
+    "backgroundColor": "#F6F6F6",
     "backgroundTextStyle": "light",
-    "navigationBarBackgroundColor": "#fff",
-    "navigationBarTitleText": "热链期：报告和发现身边疫情",
+    "navigationBarBackgroundColor": "#F6F6F6",
+    "navigationBarTitleText": "ABC疫期接触者雷达",
     "navigationBarTextStyle": "black"
   },
-  "style": "v2",
-  "sitemapLocation": "sitemap.json"
+  "requiredBackgroundModes": [
+    "location"
+  ],
+  "sitemapLocation": "sitemap.json",
+  "style": "v2"
 }
