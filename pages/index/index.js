@@ -6,7 +6,7 @@ const app = getApp()
 var QQMapWX = require('../../utils/qqmap-wx-jssdk.js');
 // 实例化API核心类 地图逆坐标解析使用
 var qqmapsdk = new QQMapWX({
-  key: '====================' // 必填
+  key: 'FRLBZ-R63E4-OA4UM-DKHDD-JW2XJ-53BQR' // 必填
 })
 
 Page({
@@ -21,7 +21,7 @@ Page({
     userZriskLevel: 0, //用户感染风险等级 0低风险，1中等风险，2疑似，3确诊
 
     myScanFlag: 0,
-    Z5kmVirusCount: '刷新中', //云端查询5公里病毒痕迹条数
+    Z5kmVirusCount: '定位中', //云端查询5公里病毒痕迹条数
     myZcount: 0, //Default 0 for showing low risk
     myZscanResult: [], //Data cache servers both result table and Map markers
     myLocalCount: '读取中',
@@ -48,19 +48,6 @@ Page({
     //  longitude: 113.304520,
     //  iconPath: '../../images/location.png'
     //}],
-
-    //自评问卷答案缓存
-    myQuestionnaire: {
-      gender: 0, //0 for female, 1 for male
-      birthdate: "2020-02-02",
-      q_temp: 37,
-      q_fali: 0,
-      q_ganke: 0,
-      q_wuhanlvxing: 0,
-      q_wuhan_jiechu: 0,
-      q_jujixing_userSelfReport: 0, //聚集性指标 通过此处用户自评与云数据检测综合得出
-      hasDoctorResult: 0
-    }
   },
 
   
@@ -160,12 +147,12 @@ Page({
    */
   onHide: function () {
     let self = this
-    //reset scan results
+    //reset scan result status for next correct show
     self.setData({
       myZscanResult: [],
       myZcount: 0, 
       myScanFlag: 0,
-      Z5kmVirusCount: 0
+      Z5kmVirusCount: '刷新中'
     })
   },
 
@@ -198,6 +185,15 @@ Page({
   },
 
   
+  getUserInfo: function (e) {
+    console.log(e)
+    app.globalData.userInfo = e.detail.userInfo
+    this.setData({
+      userInfo: e.detail.userInfo,
+      hasUserInfo: true
+    })
+  },
+
   getUserInfo: function (e) {
     console.log(e)
     app.globalData.userInfo = e.detail.userInfo
@@ -283,6 +279,7 @@ Page({
             count: 1
           })
           wx.showToast({
+            icon: 'success',
             title: '上报记录成功',
           })
           console.log('[数据库] [新增记录] 成功，记录 _id: ', res._id)
@@ -290,7 +287,7 @@ Page({
         fail: err => {
           wx.showToast({
             icon: 'none',
-            title: '上报记录失败，请稍后重试'
+            title: '上报未成功'
           })
           console.error('[数据库] [新增记录] 失败：', err)
         }
@@ -298,11 +295,12 @@ Page({
       await self.myDelay(500)
     }
   },
+
   /*--------Scanning Functions--------*/
   async myScanReport(){
-    async: false
+    //async: false
     wx.showToast({
-      title: '开始扫描',
+      title: '扫描中，请等待',
       duration: 5000,
       icon: 'loading'
     })
@@ -317,9 +315,9 @@ Page({
     })
 
     self.onQuery5km(self.data.longitude,self.data.latitude)
-    await self.onQueryBulk()
-    //[HELP: Can't promise the syn 异步顺序关不掉] 
-    await self.myDelay(3500)
+    await self.onQueryBulk() 
+    await self.myDelay(5000)
+
     self.setData({
       myScanFlag: 1,
     })
@@ -398,7 +396,7 @@ Page({
       fail: err => {
         wx.showToast({
           icon: 'none',
-          title: '本次查询记录失败，请稍后重试'
+          title: '本次查询未成功'
         })
         console.error('[数据库] [查询记录] 失败：', err)
       }
@@ -427,31 +425,32 @@ Page({
         maxDistance: 5000, //[设置][距离条件] Records in 5km meters distance 
       }),
     })//.limit(20) //小程序限制每次最多取 20 条记录
-       //.skip(20) //跳过多少条用于分页显示控制
+      //.skip(20) //跳过多少条用于分页显示控制
       .get({
-        success: res => {
-          if (res.data.length == 20) { Z5kmVirusCount="大于19";console.log("--------------->>", res.data)}
-          else { Z5kmVirusCount = res.data.length}
-          self.setData({
-            Z5kmVirusCount: Z5kmVirusCount
-          })
-          //console.log('[数据库] [查询记录5km] 成功: ', lo,la,"[resdata]:",self.data.Z5kmVirusCount)
-          //console.log('[数据库] [查询记录5km] 成功: ', res)
-        },
-        fail: err => {
-          wx.showToast({
-            icon: 'none',
-            title: '本次5km查询记录失败，请稍后重试'
-          })
-          console.error('[数据库] [查询记录5km] 失败：', err)
-        }
-      })
-      //.count() //geo不让用count 真是 疼
-    console.log('[数据库] [查询记录5km] 结束: ', self.data.Z5kmVirusCount)
+      success: res => {
+        if (res.data.length == 20) { Z5kmVirusCount="大于19";console.log("--------------->>", res.data)}
+        else { Z5kmVirusCount = res.data.length}
+        self.setData({
+          Z5kmVirusCount: Z5kmVirusCount
+        })
+        //console.log('[数据库] [查询记录5km] 成功: ', lo,la,"[resdata]:",self.data.Z5kmVirusCount)
+        //console.log('[数据库] [查询记录5km] 成功: ', res)
+      },
+      fail: err => {
+        wx.showToast({
+          icon: 'none',
+          title: '本次5km查询未成功'
+        })
+        console.error('[数据库] [查询记录5km] 失败：', err)
+      }
+    })
+    //.count() //geo不让用count 真是 疼
   },
 
+  myFormSubmit: function () {
+    location: e.detail.value.reverseGeo || '', //获取表单传入的位置坐标,不填默认当前位置,示例为string格式
+      //get_poi: 1, //是否返回周边POI列表：1.返回；0不返回(默认),非必须参数
 
-  openDialog: function () {
     this.setData({
       istrue: true
     })
