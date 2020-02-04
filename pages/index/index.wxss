@@ -79,8 +79,7 @@ button:not([size='mini']) {
 }
 .page-body-button {
   width: 100%;
-  height: 40px;
-  size: mini;
+  height: 45px;
 }
 
 .myFlatFlexTight {
