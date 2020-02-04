@@ -6,7 +6,7 @@ const app = getApp()
 var QQMapWX = require('../../utils/qqmap-wx-jssdk.js');
 // 实例化API核心类 地图逆坐标解析使用
 var qqmapsdk = new QQMapWX({
-  key: 'FRLBZ-R63E4-OA4UM-DKHDD-JW2XJ-53BQR' // 必填
+  key: '' // 必填
 })
 
 Page({
@@ -21,7 +21,7 @@ Page({
     userZriskLevel: 0, //用户感染风险等级 0低风险，1中等风险，2疑似，3确诊
 
     myScanFlag: 0,
-    Z5kmVirusCount: '定位中', //云端查询5公里病毒痕迹条数
+    Z5kmVirusCount: '读取中', //云端查询5公里病毒痕迹条数
     myZcount: 0, //Default 0 for showing low risk
     myZscanResult: [], //Data cache servers both result table and Map markers
     myLocalCount: '读取中',
@@ -32,7 +32,7 @@ Page({
     longitude: 0,
     speed:0,
     accuracy:0,
-    myLocationHistory: [], //[ [t1,latitude1,longitude1],[t2,la2,lo2],...,[] ]
+    //myLocationHistory: [], //[ [t1,latitude1,longitude1],[t2,la2,lo2],...,[] ]
     //userBluetooth: '____',
 
     hasUserInfo: false,
@@ -82,34 +82,6 @@ Page({
         }
       })
     }
-    /*wx.getSetting({ //
-      success(res) {
-        console.log(res)
-        if (res.authSetting['scope.userLocationBackground']) {
-          wx.startLocationUpdateBackground({
-            success: (res) => {
-              console.log('startLocationUpdate-res', res)
-            },
-            fail: (err) => {
-              console.log('startLocationUpdate-err', err)
-            }
-          })
-        } else {
-          if (res.authSetting['scope.userLocation'] == false) {
-            console.log('打开设置页面去授权')
-          } else {
-            wx.startLocationUpdateBackground({
-              success: (res) => {
-                console.log('startLocationUpdate-res', res)
-              },
-              fail: (err) => {
-                console.log('startLocationUpdate-err', err)
-              }
-            })
-          }
-        }
-      }
-    })*/    
   },
   
 
@@ -130,16 +102,7 @@ Page({
   onShow: function () {
     let self = this
     //Firstime in recording user location
-    self.myWaitGetLocation()    
-  },
-
-  async myWaitGetLocation() {
-    let self = this
-    //console.log("开始等待")
-    self.myGetLocationNow() //Had set 6000 for getLocation work well
-    await self.myDelay(6600)
-    //console.log("结束等待")
-    self.onQuery5km(self.data.longitude, self.data.latitude)
+    self.myGetLocationNow() //Have set 8000 for getLocation work well   
   },
 
   /**
@@ -186,16 +149,7 @@ Page({
 
   
   getUserInfo: function (e) {
-    console.log(e)
-    app.globalData.userInfo = e.detail.userInfo
-    this.setData({
-      userInfo: e.detail.userInfo,
-      hasUserInfo: true
-    })
-  },
-
-  getUserInfo: function (e) {
-    console.log(e)
+    //console.log(e)
     app.globalData.userInfo = e.detail.userInfo
     this.setData({
       userInfo: e.detail.userInfo,
@@ -214,11 +168,13 @@ Page({
       highAccuracyExpireTime: '8000', //[定位硬件工作时长]at least 3000 for performance
 
       success(res) {
-        console.log(res)
+        console.log("Get location success: ",res)
+        //Get 5km risk query every time location updates
+        self.onQuery5km(res.longitude, res.latitude)
         //Record time slot and location
-        var myLocationHistory = self.data.myLocationHistory
+        //var myLocationHistory = self.data.myLocationHistory
         //console.log(myLocationHistory)
-        myLocationHistory.push([myTimeSlotUTC, res.latitude, res.longitude, res.speed])
+        //myLocationHistory.push([myTimeSlotUTC, res.latitude, res.longitude, res.speed])
         
         //Record time slot and location to local storage
         wx.setStorage({
@@ -235,7 +191,8 @@ Page({
           longitude: res.longitude,
           speed: res.speed,
           accuracy: res.accuracy,
-          myLocationHistory: myLocationHistory,
+          //myLocationHistory: myLocationHistory,
+          //provider:provider, //gps, wifi, ble
           myLocalCount: wx.getStorageInfoSync().keys.length //Remember to call this after setStorage
         })
       }
@@ -325,7 +282,7 @@ Page({
   },
 
   async onQueryBulk() {
-    async: false
+    //async: false
     let self = this
     var myStorageKeys = wx.getStorageInfoSync().keys
     //console.log("myStorageKeys", key)
@@ -340,7 +297,7 @@ Page({
   },
 
   async onQuery(ti,lo,la) {
-    async: false
+    //async: false
     let self =  this
     const db = wx.cloud.database()
     const dbcmd = db.command
@@ -411,7 +368,7 @@ Page({
   },
 
   async onQuery5km(lo, la) {
-    async: false
+    //async: false
     let self = this
     const db = wx.cloud.database()
     const dbcmd = db.command
@@ -447,20 +404,11 @@ Page({
     //.count() //geo不让用count 真是 疼
   },
 
-  myFormSubmit: function () {
-    location: e.detail.value.reverseGeo || '', //获取表单传入的位置坐标,不填默认当前位置,示例为string格式
-      //get_poi: 1, //是否返回周边POI列表：1.返回；0不返回(默认),非必须参数
 
-    this.setData({
-      istrue: true
-    })
-  },
   closeDialog: function () {
     this.setData({
       istrue: false
     })
   }
-
-
 
 })
