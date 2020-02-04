@@ -17,27 +17,20 @@
   color: #aaa;
 }
 
-.usermotto {
-  margin-top: 3px;
-  margin-bottom: 5px;
-  color: red;
-  font-size: 16px;
-  font-style: italic;
-  font-weight: 700;
-}
-
 .myTextDisplay {
-  align-self: left;
-  width: 100%;
-  margin-left: 15px;
-  padding-top: 10px;
+  align-content: left;
+  width: 90%;
+  padding-left: 5%;
+  padding-top: 15px;
 }
 
 .myNoteDisplay{
-  align-self: left;
-  width: 90%;
+  text-align:justify;
+  width: 92%;
   margin-top: 10px;
-  padding: 10px 20px;
+  padding-left: 4%; 
+  padding-top: 15px;
+  padding-bottom: 10px;
   font-size: 12px;
 }
 
@@ -59,6 +52,7 @@
   color: black;
   font-size: 14px;
   align-self: left;
+  align-content: center; 
 }
 
 .button_detail{
@@ -70,12 +64,29 @@
   width: 60px;
 }
 
-.page-body-button {
-  width: 100%;
-  margin-top: 30rpx;
-  padding: 10rpx 20rpx;
+.usermotto {
+  text-align: center;
+  margin-top: 5px;
+  margin-bottom: 6px;
+  color: red;
+  font-size: 16px;
+  font-style: italic;
+  font-weight: 600;
 }
 
+button:not([size='mini']) {
+  width: 100%;
+}
+.page-body-button {
+  width: 100%;
+  height: 40px;
+  size: mini;
+}
+
+.myFlatFlexTight {
+  display: flex;
+  flex-direction: row;
+}
 
 
 
