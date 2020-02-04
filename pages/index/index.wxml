@@ -11,8 +11,8 @@
   </view>
   
   <view class="myFlatFlexTight">
-    <button class="page-body-button"  type="warn" bindtap="myAddReport"> 上报我的本地记录</button>
-    <button class="page-body-button"  type="primary" bindtap="myScanReport">扫描我的风险接触</button>
+    <button class="page-body-button"  type="warn" bindtap="myAddReport"> 上报我的记录</button>
+    <button class="page-body-button"  type="primary" bindtap="myScanReport">扫描我的接触</button>
   </view>
   <!--view wx:if="{{myZcount>0}}" class="myTextDisplay"><text>上传情况填写简表{{myQuestionnaire}}</text></view-->
 
@@ -20,7 +20,7 @@
     <text>扫描结果：本次扫描发现 {{myZcount}} 条 可疑接触记录\n</text>
   </view>
   <view wx:elif="{{myScanFlag==1 && myZcount==0 }}" class="myTextDisplay">
-    <text>扫描结果：本次扫描未发现可疑接触记录\n请继续保持良好卫生习惯与生活饮食状态！\n</text>
+    <text>扫描结果：本次扫描未发现可疑接触记录\n请继续保持良好的卫生与生活饮食习惯！\n</text>
   </view>
 
   <!---------Map area------->
