@@ -23,11 +23,11 @@ DONE 6. Scan with local personal history (10 minutes window and 10 meters distan
 
 8. UI Design
 
-9. Parse date and location, display in table
+DONE 9. Parse date and location, display in table
 
 10.Restructure the database table format to Avoid duplication submission
 
-11.Calibrate the time slot calculation
+DONE 11.Calibrate the time slot calculation
 
 12.ADD AIR/TRAIN/BUS NUMBERS
 
