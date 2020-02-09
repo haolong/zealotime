@@ -1,0 +1,25 @@
+{
+  "pages": [
+    "pages/zealotime/zealotime"
+  ],
+  "permission": {
+    "scope.userLocation": {
+      "desc": "你的位置信息将用于小程序位置自动记录功能"
+    },
+    "scope.userLocationBackground": {
+      "desc": "你的位置信息将用于小程序位置背景自动记录功能"
+    }
+  },
+  "window": {
+    "backgroundColor": "#F6F6F6",
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#F6F6F6",
+    "navigationBarTitleText": "ABC疫期接触者雷达",
+    "navigationBarTextStyle": "black"
+  },
+  "requiredBackgroundModes": [
+    "location"
+  ],
+  "sitemapLocation": "sitemap.json",
+  "style": "v2"
+}

@@ -1,0 +1,80 @@
+<!--miniprogram/pages/zealotime/zealotime.wxml-->
+<view class="page">
+  <!-- <view class="usermotto"><text>{{motto}}</text></view> -->
+  <image style="width: 100%;" mode="widthFix"  src="../../images/banner.jpg"></image>
+  
+
+  <!--view wx:if="{{myZcount>0}}" class="myTextDisplay"><text>上传情况填写简表{{myQuestionnaire}}</text></view-->
+
+  <view wx:if="{{myZcount>0}}" class="myTextDisplay">
+    <text>扫描结果：本次扫描发现 {{myZcount}} 条 可疑接触记录\n</text>
+  </view>
+  <view wx:elif="{{myScanFlag==1 && myZcount==0 }}" class="myTextDisplay">
+    <text>扫描结果：本次扫描未发现可疑接触记录\n请继续保持良好的卫生与生活饮食习惯！\n</text>
+  </view>
+
+  <!---------Map area------->
+  <view wx:if="{{myZcount>0}}" class="page-section-gap">
+    <map
+      id="myMap"
+      style="width: 100%; height: 320px;"
+      latitude="{{latitude}}"
+      longitude="{{longitude}}"
+      markers="{{myZscanResult}}"
+      show-location
+    ></map>
+  </view>
+  <view wx:if="{{myZcount>0}}" class="myNoteDisplay">
+  <text>结果列表：日期 \t 位置 \t  接触者情况（可信度、症状等正在收集中）</text>
+  </view>
+  <view class="scan_result" wx:for="{{myZscanResult}}" wx:key="index">
+    <!--text>[序号]  大致时间  大致位置  接触者情况（风险等级、症状）</text-->
+    <text class="result_text">{{item.title}} :\t  {{item.address}}</text>
+    <!--button class="button_detail" bindtap='' data-item='{{item}}'>详情</button-->
+  </view>
+  
+
+  <!--button wx:if="{{myZcount}}" class="page-body-button" type="default" bindtap="openDialog">在地图中查看</button>
+  <view class="weui-demo-dialog {{istrue ? 'weui-demo-dialog_show' : ''}}">
+    <view class="weui-mask" bindtap="closeDialog"></view>
+    <view class="weui-half-screen-dialog" catchtap="stopEvent">
+      <view class="weui-half-screen-dialog__hd">
+        <view class="weui-half-screen-dialog__hd__side">
+          <view bindtap="closeDialog" class="weui-icon-btn weui-icon-btn_close">关闭</view>
+        </view>
+        <view class="weui-half-screen-dialog__hd__main">
+          <text class="weui-half-screen-dialog__title">详情</text>
+          <text class="weui-half-screen-dialog__subtitle">上滑弹出栏 小标题</text>
+        </view>
+      </view>
+      <view class="weui-half-screen-dialog__bd">
+
+      </view>
+    </view>
+  </view-->
+
+  <view class="myNoteDisplay">
+    <text>[特别提示]：我们鼓励每个有新型冠状病毒感染症状的用户第一时间上报个人记录。上报记录绝非儿戏，虚报数据将带来严重后果，点击上报按钮前请务必慎重判断！\n[功能简介]：本程序通过在用户手机本地内存自动记录定位，然后与云端病毒活动数据库扫描匹配，帮助病毒传播链中的“B类”潜在接触者自我识别预警。请尽可能保持小程序处在打开、浮窗状态或在右上角小菜单里开启“设置>位置>一直允许使用”，以保证自动记录效果。云端病毒库的更新主要依靠每个疑似感染的用户主动上报自己的记录。上报的记录将被用于帮助其他用户扫描风险并共享给公共卫生机构及早给予关注。我们严格保护隐私，只对公共卫生机构和有过风险接触的用户只提示接触的时间地点与病情程度。\n[扫描规则]：扫描云端病毒活动数据库中与我有过距离约5米、时长约10分钟接触的记录。\n\n[Hey!]: 这是一个测试体验版，所有的数据都是测试用的。因为刚开始大家周边可能没有别的用户，所以可以忽略上边的警告，先上报自己的定位记录然后再扫描，就能看到自己和自己的接触记录地图啦！由于微信对体验版用户数量有限制，我们会滚动（约为1小时）删除最先体验的用户，望理解！\n感谢支持！多提意见！我们尽快改良，发布正式版！</text>
+  </view>
+
+  <view class="bottom">
+    <view class="userinfo">
+      <button wx:if="{{!hasUserInfo && canIUse}}" open-type="getUserInfo" bindgetuserinfo="getUserInfo">请点此登录并开启自动定位记录 </button>
+      <block  wx:else>
+        <view class="avatar">
+          <image bindtap="bindViewTap" class="userinfo-avatar" src="{{userInfo.avatarUrl}}" mode="cover"></image>
+        </view>
+        <view class="location-history">
+          <text class="userinfo-nickname">{{userInfo.nickName}}</text>
+          <text class="location-info">我的定位记录： {{myLocalCount}} 条\n5公里内病毒痕迹：{{Z5kmVirusCount}} 条</text>
+        </view>
+      </block>
+    </view>
+    
+    <view class="myFlatFlexTight">
+      <button class="page-body-button myAddReport"  type="warn" bindtap="showAddPopup"> 上报我的记录</button>
+      <button class="page-body-button myScanReport"  type="primary" bindtap="myScanReport">扫描我的接触</button>
+    </view>
+  </view>
+
+</view>
