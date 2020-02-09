@@ -6,7 +6,7 @@ const app = getApp()
 var QQMapWX = require('../../utils/qqmap-wx-jssdk.js');
 // 实例化API核心类 地图逆坐标解析使用
 var qqmapsdk = new QQMapWX({
-  key: 'FRLBZ-R63E4-OA4UM-DKHDD-JW2XJ-53BQR' // 必填
+  key: 'R' // 必填
 })
 
 Page({
